@@ -21,14 +21,19 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-});
+}).promise();
 
 app.get("/medicos", (req, res) => {
-    pool.query('select * from tb_medico;', (err, results, fields) => {
-        // console.log(results);
-        // console.log(fields);
-        res.json(results);
-    });
+    pool.getConnection()
+        .then((conn) => {
+            const results = conn.query('select * from tb_medico;');
+            conn.release();
+            return results;
+        }).then((results) => {
+            res.json(results[0]);
+        }).catch((err) => {
+            console.log(err);
+        });
 });
 
 app.get("/pacientes", (req, res) => {
@@ -41,11 +46,22 @@ app.post('/medicos', (req, res) => {
     const crm = req.body.crm;
     const nome = req.body.nome;
     const query = "insert into tb_medico (crm, nome) values (?, ?);"
-    pool.query(query, [crm, nome], (error, results, fields) => {
+    pool.getConnection()
+        .then((conn) => {
+            const results = conn.query(query, [crm, nome]);
+            conn.release();
+            return results;
+        }).then((results) => {
+            res.send(results[0]);
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    /*pool.query(query, [crm, nome], (error, results, fields) => {
         console.log(query);
         console.log(error);
-        res.send('ok');
-    });
+    });*/
+    //res.send('ok');
 });
 
 app.get('/consultas', (req, res) => {
